@@ -168,9 +168,12 @@ func (c *GRPCServerConfig) Validate() error {
 
 func (c *ServerConfig) SetDefault() {
 	c.ACME = ACMEConfig{
+		ChallengeType:         "dns",
 		RetryCount:            5,
-		CertLifeTimeDuration:  168 * time.Hour,
+		RenewTimeLeft:         "24h",
+		CertLifeTime:          "168h",
 		RenewTimeLeftDuration: 24 * time.Hour,
+		CertLifeTimeDuration:  168 * time.Hour,
 	}
 
 	c.HttpServer = HttpServerConfig{
