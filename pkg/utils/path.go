@@ -6,13 +6,50 @@ import (
 	"path"
 )
 
-func MakeSDSCertDir() (string, error) {
-	dir, err := os.Getwd()
+const (
+	MTLS_CERTIFICATE_DIR = "mtls"
+	ACME_PRIVATE_KEY_DIR = "private"
+	SERVER_CACHE_FILE    = "cache.json"
+)
+
+func FileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+func findFile(file string) (string, error) {
+	cwd, err := os.Getwd()
+	if err == nil {
+		pa := path.Join(cwd, file)
+		if FileExists(pa) {
+			return pa, nil
+		}
+	}
+
+	exec, err := os.Executable()
+	if err == nil {
+		pa := path.Join(exec, file)
+		if FileExists(pa) {
+			return pa, nil
+		}
+	}
+
+	return "", os.ErrNotExist
+}
+
+func MakeMtlsCertDir() (string, error) {
+	dir, err := findFile(MTLS_CERTIFICATE_DIR)
+	if err == nil {
+		return dir, nil
+	}
+
+	exec, err := os.Executable()
 	if err != nil {
 		return "", err
 	}
+	dir = path.Dir(exec)
 
-	dir = path.Join(dir, "sds")
+	dir = path.Join(dir, MTLS_CERTIFICATE_DIR)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		err := os.Mkdir(dir, 0o777)
 		if err != nil {
@@ -25,8 +62,8 @@ func MakeSDSCertDir() (string, error) {
 	return dir, nil
 }
 
-func GetSDSCAPath() (caPEMPath, caKeyPath string, err error) {
-	caDir, err := MakeSDSCertDir()
+func GetMtlsCAPath() (caPEMPath, caKeyPath string, err error) {
+	caDir, err := MakeMtlsCertDir()
 	if err != nil {
 		return
 	}
@@ -37,7 +74,7 @@ func GetSDSCAPath() (caPEMPath, caKeyPath string, err error) {
 }
 
 func GetCACounterPath() (caCounterPath string, err error) {
-	caDir, err := MakeSDSCertDir()
+	caDir, err := MakeMtlsCertDir()
 	if err != nil {
 		return
 	}
@@ -46,19 +83,19 @@ func GetCACounterPath() (caCounterPath string, err error) {
 	return
 }
 
-func GetSDSServerCertPath() (certPEMPath, certKeyPath string, err error) {
-	caDir, err := MakeSDSCertDir()
+func GetMtlsServerCertPath() (certPEMPath, certKeyPath string, err error) {
+	caDir, err := MakeMtlsCertDir()
 	if err != nil {
 		return
 	}
 
-	certPEMPath = path.Join(caDir, "sds_server.pem")
-	certKeyPath = path.Join(caDir, "sds_server.key")
+	certPEMPath = path.Join(caDir, "server.pem")
+	certKeyPath = path.Join(caDir, "server.key")
 	return
 }
 
-func GetSDSClientCertPath(name string) (certPEMPath, certKeyPath string, err error) {
-	caDir, err := MakeSDSCertDir()
+func GetMtlsClientCertPath(name string) (certPEMPath, certKeyPath string, err error) {
+	caDir, err := MakeMtlsCertDir()
 	if err != nil {
 		return
 	}
@@ -69,12 +106,20 @@ func GetSDSClientCertPath(name string) (certPEMPath, certKeyPath string, err err
 }
 
 func GetACMEPrivateKeySavePath(email string, ACMEProvider string) (string, error) {
-	saveDir, err := os.Getwd()
+	keyName := fmt.Sprintf("%s_%s.key", email, ACMEProvider)
+
+	saveDir, err := findFile(ACME_PRIVATE_KEY_DIR)
+	if err == nil {
+		return path.Join(saveDir, keyName), nil
+	}
+
+	exec, err := os.Executable()
 	if err != nil {
 		return "", err
 	}
-	saveDir = path.Join(saveDir, "private")
-	keyName := fmt.Sprintf("%s_%s.key", email, ACMEProvider)
+	saveDir = path.Dir(exec)
+
+	saveDir = path.Join(saveDir, ACME_PRIVATE_KEY_DIR)
 
 	if _, err := os.Stat(saveDir); os.IsNotExist(err) {
 		err := os.Mkdir(saveDir, 0o755)
@@ -89,11 +134,16 @@ func GetACMEPrivateKeySavePath(email string, ACMEProvider string) (string, error
 }
 
 func GetServerCacheSavePath() string {
-	saveDir, err := os.Getwd()
-	if err != nil {
-		return "cache.json"
+	cacheFile, err := findFile(SERVER_CACHE_FILE)
+	if err == nil {
+		return cacheFile
 	}
 
-	cacheFile := path.Join(saveDir, "cache.json")
-	return cacheFile
+	exec, err := os.Executable()
+	if err != nil {
+		return SERVER_CACHE_FILE
+	}
+	saveDir := path.Dir(exec)
+
+	return path.Join(saveDir, SERVER_CACHE_FILE)
 }

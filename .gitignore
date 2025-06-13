@@ -21,7 +21,7 @@
 go.work
 
 # Config file
-*.toml
+/*.toml
 
 # Release files
 release/certdx_*
@@ -34,8 +34,8 @@ release/caddy_certdx_*
 
 *.service.toml
 *_config.service.toml
-/private
-/sds
+private
+mtls
 cache.json
 *Caddyfile
 *caddy

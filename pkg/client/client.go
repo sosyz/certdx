@@ -17,7 +17,7 @@ import (
 )
 
 type CertDXClientDaemon struct {
-	Config    *config.ClientConfigT
+	Config    *config.ClientConfig
 	ClientOpt []CertDXHttpClientOption
 
 	certs    map[uint64]*watchingCert
@@ -62,7 +62,7 @@ func (c *watchingCert) watchUpdate(wg *sync.WaitGroup) {
 
 func MakeCertDXClientDaemon() *CertDXClientDaemon {
 	ret := &CertDXClientDaemon{
-		Config:    &config.ClientConfigT{},
+		Config:    &config.ClientConfig{},
 		ClientOpt: make([]CertDXHttpClientOption, 0),
 		certs:     make(map[uint64]*watchingCert),
 		stopChan:  make(chan struct{}),
@@ -409,7 +409,6 @@ func (r *CertDXClientDaemon) GRPCMain() {
 
 func (r *CertDXClientDaemon) Stop() {
 	close(r.stopChan)
-	r.stopChan = nil
 }
 
 func (r *CertDXClientDaemon) GetCertificate(ctx context.Context, certHash uint64) (*tls.Certificate, error) {
